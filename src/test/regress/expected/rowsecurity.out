@@ -1437,11 +1437,11 @@ NOTICE:  f_leak => 03b26944890929ff751653acb2f2af79
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT * FROM only s1 WHERE f_leak(b);
-                        QUERY PLAN                         
------------------------------------------------------------
+                                 QUERY PLAN                                  
+-----------------------------------------------------------------------------
  Seq Scan on s1
-   Filter: ((hashed SubPlan 1) AND f_leak(b))
-   SubPlan 1
+   Filter: ((ANY (a = $0) FROM HASHED SubPlan 1 (returns $0)) AND f_leak(b))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on s2
            Filter: (((x % 2) = 0) AND (y ~~ '%2f%'::text))
 (5 rows)
@@ -1457,11 +1457,11 @@ NOTICE:  f_leak => 03b26944890929ff751653acb2f2af79
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT * FROM s1 WHERE f_leak(b);
-                        QUERY PLAN                         
------------------------------------------------------------
+                                 QUERY PLAN                                  
+-----------------------------------------------------------------------------
  Seq Scan on s1
-   Filter: ((hashed SubPlan 1) AND f_leak(b))
-   SubPlan 1
+   Filter: ((ANY (a = $0) FROM HASHED SubPlan 1 (returns $0)) AND f_leak(b))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on s2
            Filter: (((x % 2) = 0) AND (y ~~ '%af%'::text))
 (5 rows)
@@ -1473,15 +1473,15 @@ SELECT (SELECT x FROM s1 LIMIT 1) xx, * FROM s2 WHERE y like '%28%';
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT (SELECT x FROM s1 LIMIT 1) xx, * FROM s2 WHERE y like '%28%';
-                               QUERY PLAN                                
--------------------------------------------------------------------------
+                                QUERY PLAN                                 
+---------------------------------------------------------------------------
  Seq Scan on s2
    Filter: (((x % 2) = 0) AND (y ~~ '%28%'::text))
    SubPlan 2
      ->  Limit
            ->  Seq Scan on s1
-                 Filter: (hashed SubPlan 1)
-                 SubPlan 1
+                 Filter: (ANY (a = $1) FROM HASHED SubPlan 1 (returns $1))
+                 SubPlan 1 (returns $1)
                    ->  Seq Scan on s2 s2_1
                          Filter: (((x % 2) = 0) AND (y ~~ '%af%'::text))
 (9 rows)
@@ -2687,11 +2687,11 @@ NOTICE:  f_leak => bbb
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT * FROM rls_view;
-                              QUERY PLAN                              
-----------------------------------------------------------------------
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
  Seq Scan on z1
-   Filter: ((NOT (hashed SubPlan 1)) AND ((a % 2) = 0) AND f_leak(b))
-   SubPlan 1
+   Filter: ((NOT (ANY (a = $0) FROM HASHED SubPlan 1 (returns $0))) AND ((a % 2) = 0) AND f_leak(b))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on z1_blacklist
 (4 rows)
 
@@ -2705,11 +2705,11 @@ NOTICE:  f_leak => bbb
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT * FROM rls_view;
-                              QUERY PLAN                              
-----------------------------------------------------------------------
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
  Seq Scan on z1
-   Filter: ((NOT (hashed SubPlan 1)) AND ((a % 2) = 0) AND f_leak(b))
-   SubPlan 1
+   Filter: ((NOT (ANY (a = $0) FROM HASHED SubPlan 1 (returns $0))) AND ((a % 2) = 0) AND f_leak(b))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on z1_blacklist
 (4 rows)
 
@@ -2877,11 +2877,11 @@ NOTICE:  f_leak => bbb
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT * FROM rls_view;
-                              QUERY PLAN                              
-----------------------------------------------------------------------
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
  Seq Scan on z1
-   Filter: ((NOT (hashed SubPlan 1)) AND ((a % 2) = 0) AND f_leak(b))
-   SubPlan 1
+   Filter: ((NOT (ANY (a = $0) FROM HASHED SubPlan 1 (returns $0))) AND ((a % 2) = 0) AND f_leak(b))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on z1_blacklist
 (4 rows)
 
@@ -2903,11 +2903,11 @@ NOTICE:  f_leak => aba
 (1 row)
 
 EXPLAIN (COSTS OFF) SELECT * FROM rls_view;
-                              QUERY PLAN                              
-----------------------------------------------------------------------
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
  Seq Scan on z1
-   Filter: ((NOT (hashed SubPlan 1)) AND ((a % 2) = 1) AND f_leak(b))
-   SubPlan 1
+   Filter: ((NOT (ANY (a = $0) FROM HASHED SubPlan 1 (returns $0))) AND ((a % 2) = 1) AND f_leak(b))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on z1_blacklist
 (4 rows)
 

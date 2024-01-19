@@ -8871,12 +8871,51 @@ get_rule_expr(Node *node, deparse_context *context,
 				 * We cannot see an already-planned subplan in rule deparsing,
 				 * only while EXPLAINing a query plan.  We don't try to
 				 * reconstruct the original SQL, just reference the subplan
-				 * that appears elsewhere in EXPLAIN's result.
+				 * that appears elsewhere in EXPLAIN's result.  It does seem
+				 * useful to show the subLinkType and testexpr, however, and
+				 * we also note whether the subplan will be hashed.
 				 */
+				switch (subplan->subLinkType)
+				{
+					case EXISTS_SUBLINK:
+						appendStringInfoString(buf, "EXISTS(");
+						Assert(subplan->testexpr == NULL);
+						break;
+					case ALL_SUBLINK:
+						appendStringInfoString(buf, "(ALL ");
+						get_rule_expr(subplan->testexpr, context, showimplicit);
+						appendStringInfoString(buf, " FROM ");
+						break;
+					case ANY_SUBLINK:
+						appendStringInfoString(buf, "(ANY ");
+						get_rule_expr(subplan->testexpr, context, showimplicit);
+						appendStringInfoString(buf, " FROM ");
+						break;
+					case ROWCOMPARE_SUBLINK:
+						appendStringInfoString(buf, "(ROWCOMPARE ");
+						get_rule_expr(subplan->testexpr, context, showimplicit);
+						appendStringInfoString(buf, " FROM ");
+						break;
+					case EXPR_SUBLINK:
+					case MULTIEXPR_SUBLINK:
+						/* No need to decorate these subplan references */
+						appendStringInfoString(buf, "(");
+						Assert(subplan->testexpr == NULL);
+						break;
+					case ARRAY_SUBLINK:
+						appendStringInfoString(buf, "ARRAY(");
+						Assert(subplan->testexpr == NULL);
+						break;
+					case CTE_SUBLINK:
+						/* This case is unreachable within expressions */
+						appendStringInfoString(buf, "CTE(");
+						Assert(subplan->testexpr == NULL);
+						break;
+				}
 				if (subplan->useHashTable)
-					appendStringInfo(buf, "(hashed %s)", subplan->plan_name);
+					appendStringInfo(buf, "HASHED %s)", subplan->plan_name);
 				else
-					appendStringInfo(buf, "(%s)", subplan->plan_name);
+					appendStringInfo(buf, "%s)", subplan->plan_name);
 			}
 			break;
 

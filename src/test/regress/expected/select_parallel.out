@@ -291,15 +291,15 @@ alter table tenk2 set (parallel_workers = 0);
 explain (costs off)
 	select count(*) from tenk1 where (two, four) not in
 	(select hundred, thousand from tenk2 where thousand > 100);
-                      QUERY PLAN                      
-------------------------------------------------------
+                                                 QUERY PLAN                                                 
+------------------------------------------------------------------------------------------------------------
  Finalize Aggregate
    ->  Gather
          Workers Planned: 4
          ->  Partial Aggregate
                ->  Parallel Seq Scan on tenk1
-                     Filter: (NOT (hashed SubPlan 1))
-                     SubPlan 1
+                     Filter: (NOT (ANY ((two = $0) AND (four = $1)) FROM HASHED SubPlan 1 (returns $0,$1)))
+                     SubPlan 1 (returns $0,$1)
                        ->  Seq Scan on tenk2
                              Filter: (thousand > 100)
 (9 rows)
@@ -315,11 +315,11 @@ select count(*) from tenk1 where (two, four) not in
 explain (costs off)
 	select * from tenk1 where (unique1 + random())::integer not in
 	(select ten from tenk2);
-             QUERY PLAN             
-------------------------------------
+                                                     QUERY PLAN                                                      
+---------------------------------------------------------------------------------------------------------------------
  Seq Scan on tenk1
-   Filter: (NOT (hashed SubPlan 1))
-   SubPlan 1
+   Filter: (NOT (ANY ((((unique1)::double precision + random()))::integer = $0) FROM HASHED SubPlan 1 (returns $0)))
+   SubPlan 1 (returns $0)
      ->  Seq Scan on tenk2
 (4 rows)
 
@@ -1182,10 +1182,10 @@ ORDER BY 1, 2, 3;
 EXPLAIN (VERBOSE, COSTS OFF)
 SELECT generate_series(1, two), array(select generate_series(1, two))
   FROM tenk1 ORDER BY tenthous;
-                              QUERY PLAN                              
-----------------------------------------------------------------------
+                                QUERY PLAN                                 
+---------------------------------------------------------------------------
  ProjectSet
-   Output: generate_series(1, tenk1.two), (SubPlan 1), tenk1.tenthous
+   Output: generate_series(1, tenk1.two), ARRAY(SubPlan 1), tenk1.tenthous
    ->  Gather Merge
          Output: tenk1.two, tenk1.tenthous
          Workers Planned: 4

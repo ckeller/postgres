@@ -326,6 +326,7 @@ build_subplan(PlannerInfo *root, Plan *plan, PlannerInfo *subroot,
 	Node	   *result;
 	SubPlan    *splan;
 	bool		isInitPlan;
+	StringInfoData splanname;
 	ListCell   *lc;
 
 	/*
@@ -560,22 +561,31 @@ build_subplan(PlannerInfo *root, Plan *plan, PlannerInfo *subroot,
 												   splan->plan_id);
 
 	/* Label the subplan for EXPLAIN purposes */
-	splan->plan_name = palloc(32 + 12 * list_length(splan->setParam));
-	sprintf(splan->plan_name, "%s %d",
-			isInitPlan ? "InitPlan" : "SubPlan",
-			splan->plan_id);
+	initStringInfo(&splanname);
+	appendStringInfo(&splanname, "%s %d",
+					 isInitPlan ? "InitPlan" : "SubPlan",
+					 splan->plan_id);
 	if (splan->setParam)
 	{
-		char	   *ptr = splan->plan_name + strlen(splan->plan_name);
-
-		ptr += sprintf(ptr, " (returns ");
+		appendStringInfoString(&splanname, " (returns ");
 		foreach(lc, splan->setParam)
 		{
-			ptr += sprintf(ptr, "$%d%s",
-						   lfirst_int(lc),
-						   lnext(splan->setParam, lc) ? "," : ")");
+			appendStringInfo(&splanname, "$%d%s",
+							 lfirst_int(lc),
+							 lnext(splan->setParam, lc) ? "," : ")");
 		}
 	}
+	else if (splan->paramIds)
+	{
+		appendStringInfoString(&splanname, " (returns ");
+		foreach(lc, splan->paramIds)
+		{
+			appendStringInfo(&splanname, "$%d%s",
+							 lfirst_int(lc),
+							 lnext(splan->paramIds, lc) ? "," : ")");
+		}
+	}
+	splan->plan_name = splanname.data;
 
 	/* Lastly, fill in the cost estimates for use later */
 	cost_subplan(root, splan, plan);

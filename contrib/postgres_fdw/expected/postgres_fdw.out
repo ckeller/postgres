@@ -3264,14 +3264,14 @@ select sum(c1) filter (where (c1 / c1) * random() <= 1) from ft1 group by c2 ord
 
 explain (verbose, costs off)
 select sum(c2) filter (where c2 in (select c2 from ft1 where c2 < 5)) from ft1;
-                            QUERY PLAN                             
--------------------------------------------------------------------
+                                         QUERY PLAN                                          
+---------------------------------------------------------------------------------------------
  Aggregate
-   Output: sum(ft1.c2) FILTER (WHERE (hashed SubPlan 1))
+   Output: sum(ft1.c2) FILTER (WHERE (ANY (ft1.c2 = $0) FROM HASHED SubPlan 1 (returns $0)))
    ->  Foreign Scan on public.ft1
          Output: ft1.c2
          Remote SQL: SELECT c2 FROM "S 1"."T 1"
-   SubPlan 1
+   SubPlan 1 (returns $0)
      ->  Foreign Scan on public.ft1 ft1_1
            Output: ft1_1.c2
            Remote SQL: SELECT c2 FROM "S 1"."T 1" WHERE ((c2 < 5))
@@ -11899,8 +11899,8 @@ SELECT a FROM base_tbl WHERE a IN (SELECT a FROM foreign_tbl);
 -----------------------------------------------------------------------------
  Seq Scan on public.base_tbl
    Output: base_tbl.a
-   Filter: (SubPlan 1)
-   SubPlan 1
+   Filter: (ANY (base_tbl.a = $1) FROM SubPlan 1 (returns $1))
+   SubPlan 1 (returns $1)
      ->  Result
            Output: base_tbl.a
            ->  Append
